@@ -8,14 +8,13 @@ package Air;
 import java.io.*;
 import java.util.*;
 import java.text.*;
-import java.sql.*;
+
 
 public class ag2
 {
-	   
-  public static void main (String[] args) throws ClassNotFoundException
+  public static void main (String[] args)
   {
-	  AirGourmetUtilities.displayMainMenu ();
+    AirGourmetUtilities.displayMainMenu ();
   }
 
 }  // class ag2

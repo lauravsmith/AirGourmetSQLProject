@@ -9,7 +9,6 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
 import Air.AirGourmetUtilities;
-import java.sql.*;
 
 public class CPassenger implements Serializable {
 	
@@ -61,50 +60,6 @@ public class CPassenger implements Serializable {
 	  //
 	  // public methods
 	  //
-	   static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
-	   static final String DB_URL = "jdbc:mysql://localhost/se4453";
-
-	   //  Database credentials
-	   static final String USER = "root";
-	   static final String PASS = "123456";
-	  
-	  public void savePassenger() 
-	  {
-		  if (!this.alreadyExists()) {
-		   Connection conn = null;
-		   Statement stmt = null;
-		   
-		String insertTableSQL = "INSERT INTO CPASSENGER"
-					+ "(PASSENGERID, FIRSTNAME, MIDDLEINIT, LASTNAME, SUFFIX, ADDRESS1, ADDRESS2, CITY, STATE, POSTALCODE, COUNTRY) " + "VALUES"
-					+ "(" + "'"+ this.passengerID +"','"+ this.firstName + "','" + this.middleInit + "','" + this.lastName + "','"+ this.suffix + "','" + this.address1 + "','" + this.address2 + "','" + this.city +"','"+ this.state +"','"+ this.postalCode + "','" + this.country + "')";
-				
-				try{
-			   
-			      //STEP 2: Register JDBC driver
-			      DriverManager.registerDriver(new com.mysql.jdbc.Driver());
-
-			      //STEP 3: Open a connection
-			      conn = DriverManager.getConnection(DB_URL, USER, PASS);
-
-			      //STEP 4: Execute a query
-			      stmt = conn.createStatement();
-			   // execute insert SQL stetement
-					stmt.executeUpdate(insertTableSQL);
-					
-			   }catch(SQLException se){
-			      //Handle errors for JDBC
-			      se.printStackTrace();
-			   } finally{
-				      //finally block used to close resources
-				      try{
-				         if(conn!=null)
-				            conn.close();
-				      }catch(SQLException se){
-				         se.printStackTrace();
-				      }//end finally try
-				   }//end try
-		  }
-	  }
 
 	  public synchronized String toString ()
 	  //
@@ -116,26 +71,22 @@ public class CPassenger implements Serializable {
 	        + country;
 	  }
 
-	  public void Copy (ResultSet tempPassenger) throws SQLException
+	  public void Copy (CPassenger tempPassenger)
 	  //
 	  // Copy  makes a copy of tempPassenger into the current object
 	  //
 	  {
-//		  String insertTableSQL = "INSERT INTO CPASSENGER"
-//					+ "(PASSENGERID, FIRSTNAME, MIDDLEINIT, LASTNAME, SUFFIX, ADDRESS1, ADDRESS2, CITY, STATE, POSTALCODE, COUNTRY) " + "VALUES"
-//					+ "(" + "'"+ this.passengerID +"','"
-	    this.passengerID = tempPassenger.getString("PASSENGERID");
-	    this.firstName = tempPassenger.getString("FIRSTNAME");
-	    this.middleInit = tempPassenger.getString("MIDDLEINIT").charAt(0);
-	    this.lastName = tempPassenger.getString("LASTNAME");
-	    this.suffix = tempPassenger.getString("SUFFIX");
-	    this.address1 = tempPassenger.getString("ADDRESS1");
-	    this.address2 = tempPassenger.getString("ADDRESS2");
-	    this.city = tempPassenger.getString("CITY");
-	    this.state = tempPassenger.getString("STATE");
-	    this.postalCode = tempPassenger.getString("POSTALCODE");
-	    this.country = tempPassenger.getString("COUNTRY");
-	    System.out.println("saving passenger");
+	    this.passengerID = tempPassenger.getPassengerID ();
+	    this.firstName = tempPassenger.getFirstName ();
+	    this.middleInit = tempPassenger.getMiddleInit ();
+	    this.lastName = tempPassenger.getLastName ();
+	    this.suffix = tempPassenger.getSuffix ();
+	    this.address1 = tempPassenger.getAddress1 ();
+	    this.address2 = tempPassenger.getAddress2 ();
+	    this.city = tempPassenger.getCity ();
+	    this.state = tempPassenger.getState ();
+	    this.postalCode = tempPassenger.getPostalCode ();
+	    this.country = tempPassenger.getCountry ();
 	  }
 
 	  public boolean getPassenger (String searchID)
@@ -144,48 +95,57 @@ public class CPassenger implements Serializable {
 	  // Returns true if the passenger was found and loaded
 	  //
 	  {
+	    boolean        found = false;  // indicates if passenger already exists
+	    File          fileExists = new File ("passenger.dat");
+	                      // used to test if file exists
+	    CPassenger      tempPassenger;  // temporary object used to determine if
+	                      // object already exists
+	    boolean        EOF = false;
 
-		   Connection conn = null;
-		   Statement stmt = null;
-			String selectTableSQL = "SELECT * FROM CPASSENGER WHERE PASSENGERID='" + this.passengerID + "'";
+	    if (!fileExists.exists ())
+	      return false;
 
-				try{
-			   
-			      //STEP 2: Register JDBC driver
-			      DriverManager.registerDriver(new com.mysql.jdbc.Driver());
+	    try
+	    {
+	      ObjectInputStream in = new ObjectInputStream (new FileInputStream 
+	          ("passenger.dat"));
 
-			      //STEP 3: Open a connection
-			      conn = DriverManager.getConnection(DB_URL, USER, PASS);
+	      while (!EOF)
+	      {
+	        try
+	        {
+	          //
+	          // determine if the passenger object already exists
+	          //
+	          tempPassenger = (CPassenger)in.readObject ();
 
-			      //STEP 4: Execute a query
-			      stmt = conn.createStatement();
-			   // execute insert SQL stetement
-			      ResultSet rs = stmt.executeQuery(selectTableSQL);
-					
-			      boolean exists = rs.next();
-			      
-			      if (exists) {
-			    	  
-			    	  this.Copy(rs);
-			    	  return true;
-			      } else {
-			    	  return false;
-			      }
-				}
-				    catch (Exception e)
-				    {
-				      e.printStackTrace (System.out);
-				    } finally{
-				        //finally block used to close resources
-				        try{
-				           if(conn!=null)
-				              conn.close();
-				        }catch(SQLException se){
-				           se.printStackTrace();
-				        }//end finally try
-				     }//end try
-				
-				return false;
+	          //
+	      // check if there is a match with searchID
+	          //
+	          if (tempPassenger.getPassengerID ().toLowerCase ().compareTo
+	              (searchID.toLowerCase ()) == 0)
+	            {
+	              found = true;
+	              this.Copy (tempPassenger);
+	              break;
+	            }
+	        } // try
+	        catch (EOFException e)
+	        {
+	          EOF = true;
+	        }
+
+	      } // while (!EOF)
+
+	      in.close ();
+	    } // try
+	    catch (Exception e)
+	    {
+	      e.printStackTrace (System.out);
+	    }
+
+	    return found;
+
 	  } // getPassenger
 
 
@@ -236,6 +196,107 @@ public class CPassenger implements Serializable {
 	    }
 	  } // getDescription
 
+
+	  public void insert ()
+	  //
+	  // insert inserts a passenger object in the proper place
+	  //
+	  {
+	    boolean        found = false;  // indicates if object insertion point found
+	    File          fileExists = new File ("passenger.dat");
+	                      // used to test if file exists
+	    CPassenger      tempPassenger;  // temporary object used for file copying
+	    boolean        EOF = false;
+
+	    try
+	    {
+	      ObjectOutputStream out = new ObjectOutputStream (new FileOutputStream
+	          ("tempP.dat"));
+
+	      if (fileExists.exists ())
+	      {
+	        ObjectInputStream in = new ObjectInputStream (new FileInputStream
+	            ("passenger.dat"));
+
+	        while (!EOF)
+	        {
+	          try
+	          {
+	            // read/write temporary object from the passenger file
+	            tempPassenger = (CPassenger)in.readObject ();
+	            out.writeObject (tempPassenger);
+	          }
+	          catch (EOFException e)
+	          {
+	            EOF = true;
+	          }
+
+	        } // while (!EOF)
+
+	        in.close ();
+	      } // if (fileExists.exists ())
+	      else
+	        out.writeObject (this);
+
+	      out.close ();
+	    } // try
+
+	    catch (Exception e)
+	    {
+	      e.printStackTrace (System.out);
+	    }
+
+	    EOF = false;
+
+	    try
+	    {
+	      ObjectInputStream in = new ObjectInputStream (new FileInputStream ("tempP.dat"));
+	      ObjectOutputStream out = new ObjectOutputStream (new FileOutputStream
+	          ("passenger.dat"));
+
+	      while (!EOF)
+	      {
+	        try
+	        {
+	          tempPassenger = (CPassenger)in.readObject ();
+
+	          //
+	          // check if there is already a passenger with the current ID.
+	          // If one exists, it means a change of address so write the new
+	          // passenger object into the file
+	          //
+	          if (passengerID.compareTo (tempPassenger.getPassengerID ().
+	              toLowerCase ()) == 0)
+	          {
+	            out.writeObject (this);
+	            found = true;
+	          }
+	          else
+	            out.writeObject (tempPassenger);
+
+	        } // try
+
+	        catch (EOFException e)
+	        {
+	          if (!found)
+	            out.writeObject (this);
+
+	          EOF = true;
+	        }
+
+	      } // while (!EOF)
+
+	      in.close ();
+	      out.close ();
+	    } // try
+
+	    catch (Exception e)
+	    {
+	      e.printStackTrace (System.out);
+	    }
+
+	  } // insert
+
 	  //
 	  // private method
 	  //
@@ -247,58 +308,84 @@ public class CPassenger implements Serializable {
 	  // are to be used
 	  //
 	  {
-		   Connection conn = null;
-		   Statement stmt = null;
-			String selectTableSQL = "SELECT * FROM CPASSENGER WHERE PASSENGERID='" + this.passengerID + "'";
+	    char          ch;    // holds user response to Y/N question
+	    boolean        found = false;  // indicates if passenger already exists
+	    String          searchID;  // the passengerID for which to search
+	    File          fileExists = new File ("passenger.dat");
+	                      // used to test if file exists
+	    CPassenger      tempPassenger;  // temporary object used to determine if
+	                      // object already exists
+	    boolean        EOF = false;
 
-				try{
-			   
-			      //STEP 2: Register JDBC driver
-			      DriverManager.registerDriver(new com.mysql.jdbc.Driver());
+	    if (!fileExists.exists ())
+	      return false;
 
-			      //STEP 3: Open a connection
-			      conn = DriverManager.getConnection(DB_URL, USER, PASS);
+	    searchID = passengerID;
 
-			      //STEP 4: Execute a query
-			      stmt = conn.createStatement();
-			   // execute insert SQL stetement
-			      ResultSet rs = stmt.executeQuery(selectTableSQL);
-					
-			      boolean exists = rs.next();
-			      
-			      if (exists) {
-			    	  
-			    	  this.Copy(rs);
-			  	    
-				      System.out.println ("\n\n");
-				      System.out.println ("The following passenger exists: \n\n");
-				      System.out.println (this.toString () + "\n");
+	    try
+	    {
+	      ObjectInputStream in = new ObjectInputStream (new FileInputStream
+	          ("passenger.dat"));
 
-				      System.out.println ("Do you want to use this name and address to make a ");
-				      System.out.print ("reservation for this passenger (Y/N)? ");
+	      while (!EOF)
+	      {
+	        try
+	        {
+	          //
+	          // determine if the passenger object already exists
+	          //
+	          tempPassenger = (CPassenger)in.readObject ();
 
-				      char ch = AirGourmetUtilities.getChar ();
-				      System.out.println ("\n");
+	          if (tempPassenger.getPassengerID ().toLowerCase ().compareTo
+	              (searchID.toLowerCase ()) == 0)
+	          {
+	            found = true;
+	            this.Copy (tempPassenger);
+	            break;
+	          }
+	        } // try
 
-				      if (Character.toUpperCase (ch) == 'Y')
-				    	  return true;
-			      } else {
-			    	  return false;
-			      }
-			      return false;
-			   }catch(SQLException se){
-			      //Handle errors for JDBC
-			      se.printStackTrace();
-			   } finally{
-				      //finally block used to close resources
-				      try{
-				         if(conn!=null)
-				            conn.close();
-				      }catch(SQLException se){
-				         se.printStackTrace();
-				      }//end finally try
-				   }//end try
-				return false; 
+	        catch (EOFException e)
+	        {
+	          EOF = true;
+	        }
+
+	      } // while
+
+	      in.close ();
+	    } // try
+
+	    catch (Exception e)
+	    {
+	      e.printStackTrace (System.out);
+	    }
+
+	    //
+	    // A record was found that has the same passengerID.
+	    // Ask the users if they want to use this record in the current
+	    // reservation (if the user answers N, then a new name/address may be
+	    // given to this passengerID)
+	    //
+	    if (found)
+	    {
+	      System.out.println ("\n\n");
+	      System.out.println ("The following passenger exists: \n\n");
+	      System.out.println (this.toString () + "\n");
+
+	      System.out.println ("Do you want to use this name and address to make a ");
+	      System.out.print ("reservation for this passenger (Y/N)? ");
+
+	      ch = AirGourmetUtilities.getChar ();
+	      System.out.println ("\n");
+
+	      found = false;
+
+	      if (Character.toUpperCase (ch) == 'Y')
+	        found = true;
+	    }
+	    passengerID = searchID;
+	    return found;
+
 	  } // alreadyExists
 
 	} // class CPassenger

@@ -21,7 +21,7 @@ public class COnBoardReport extends CReport {
 	  {
 	    boolean        dateOK = false;  // indicates if flight date properly entered
 	    String          flightStrDate;  // used to get a string representing a date
-	    SimpleDateFormat     flightDateFormat = new SimpleDateFormat ("mm/dd/yyyy");
+	    SimpleDateFormat     flightDateFormat = new SimpleDateFormat ("MMM/dd/yyyy");
 	                      // used to parse a date
 
 	    AirGourmetUtilities.clearScreen ();
