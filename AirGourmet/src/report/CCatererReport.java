@@ -28,7 +28,7 @@ public class CCatererReport extends CReport {
 	  {
 	    boolean        dateOK = false;  // indicates if flight date properly entered
 	    String          flightStrDate;   // used to get a string representing a date
-	    SimpleDateFormat flightDateFormat = new SimpleDateFormat ("MMM/dd/yyyy");
+	    SimpleDateFormat flightDateFormat = new SimpleDateFormat ("mm/dd/yyyy");
 	                      // used to parse a date
 
 	    AirGourmetUtilities.clearScreen ();

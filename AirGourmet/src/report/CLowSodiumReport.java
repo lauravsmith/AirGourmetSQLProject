@@ -25,7 +25,7 @@ public class CLowSodiumReport extends CReport {
 	  // printRecord outputs the flight number, flight date, and perceived quality
 	  //
 	  {
-	    SimpleDateFormat flightDateFormat = new SimpleDateFormat ("MMM/dd/yyyy");
+	    SimpleDateFormat flightDateFormat = new SimpleDateFormat ("mm/dd/yyyy");
 	                      // used to format dates
 
 	    System.out.println ("-----------------------------------------------------------------------------");

@@ -4,6 +4,11 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -39,6 +44,12 @@ public class CReport {
 	  public void    setFromDate (Date f)  { fromDate = f; }
 	  public void    setToDate (Date t)  { toDate = t; }
 
+	   static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
+	   static final String DB_URL = "jdbc:mysql://localhost/se4453";
+
+	   //  Database credentials
+	   static final String USER = "root";
+	   static final String PASS = "123456";
 	  //
 	  // overridden methods
 	  //
@@ -61,7 +72,7 @@ public class CReport {
 	    boolean        dateOK = false;  // indicates if a date was properly entered
 	    boolean        rangeOK = false;  // indicates if report range properly entered
 	    String          fromStrDate, toStrDate;
-	    SimpleDateFormat flightDateFormat = new SimpleDateFormat ("MMM/dd/yyyy");
+	    SimpleDateFormat flightDateFormat = new SimpleDateFormat ("mm/dd/yyyy");
 	    Calendar toCalendar = new GregorianCalendar ();
 	                      // used to convert to date
 	    Calendar fromCalendar = new GregorianCalendar ();
@@ -147,87 +158,66 @@ public class CReport {
 	  // flight record file.  For each record that qualifies for the report, it invokes function printRecord
 	  //
 	  {
-	    int          numRecs = 0;  // count of total flight records
-	    boolean        EOF = false;
-	    File          fileExists = new File ("fltRec.dat");
-	                      // used to test if file exists
-	    CFlightRecord tempFltRec;    // used to read in object from flight record file
+		  Connection conn = null;
+		   Statement stmt = null;
+			String selectTableSQL = "SELECT * FROM CFLIGHTRECORD";
+			int          numRecs = 0;  // count of total flight records
+				try{
+			   
+			      //STEP 2: Register JDBC driver
+			      DriverManager.registerDriver(new com.mysql.jdbc.Driver());
 
-	    if (fileExists.exists ())
-	    {
-	      getQualifications ();
-	      AirGourmetUtilities.clearScreen ();
+			      //STEP 3: Open a connection
+			      conn = DriverManager.getConnection(DB_URL, USER, PASS);
 
-	      try
-	      {
-	        ObjectInputStream in = new ObjectInputStream (new FileInputStream
-	            ("fltRec.dat"));
+			      //STEP 4: Execute a query
+			      stmt = conn.createStatement();
+			   // execute insert SQL stetement
+			      ResultSet rs = stmt.executeQuery(selectTableSQL);
+			      
+			      while (rs.next()) {
+			    	    CFlightRecord flightRecord = new CFlightRecord(); 
+			    	    flightRecord.Copy(rs);
+			    	    
+			    	    if (qualifiesForReport (flightRecord))
+			            {
+			              if (printHeader)
+			              {
+			                //
+			                // pause the screen after every recsPerScreen flight records
+			                //
+			                if (( (numRecs % recsPerScreen) == 0) && (numRecs != 0))
+			                {
+			                  System.out.println ("\n\n Press <ENTER> to view" 
+			                        + " the next screen...");
+			                  AirGourmetUtilities.pressEnter ();
+			                }
 
-	        while (!EOF)
-	        {
-	          try
-	          {
-	            //
-	            // determine if the passenger object already exists
-	            //
-	            tempFltRec = (CFlightRecord)in.readObject ();
+			                //
+			                // display a header message when needed
+			                //
+			                if ((numRecs % recsPerScreen) == 0)
+			                {
+			                  AirGourmetUtilities.clearScreen ();
+			                  System.out.println ("\n\n                         Air Gourmet\n");
+			                  System.out.println ("      " + theHeader);
+			                }
 
-	            //
-	            // check if the flight date is within the given range
-	            // and that this the record qualifies for the report
-	            //
-	            if (qualifiesForReport (tempFltRec))
-	            {
-	              if (printHeader)
-	              {
-	                //
-	                // pause the screen after every recsPerScreen flight records
-	                //
-	                if (( (numRecs % recsPerScreen) == 0) && (numRecs != 0))
-	                {
-	                  System.out.println ("\n\n Press <ENTER> to view" 
-	                        + " the next screen...");
-	                  AirGourmetUtilities.pressEnter ();
-	                }
+			              } // if (printHeader)
 
-	                //
-	                // display a header message when needed
-	                //
-	                if ((numRecs % recsPerScreen) == 0)
-	                {
-	                  AirGourmetUtilities.clearScreen ();
-	                  System.out.println ("\n\n                         Air Gourmet\n");
-	                  System.out.println ("      " + theHeader);
-	                }
+			              //
+			              // call the method to handle this record
+			              //
+			              printRecord (flightRecord);
 
-	              } // if (printHeader)
+			              numRecs++;
 
-	              //
-	              // call the method to handle this record
-	              //
-	              printRecord (tempFltRec);
-
-	              numRecs++;
-
-	            } // if (qualifiesForReport (tempFltRec))
-
-	          } // try
-
-	          catch (EOFException e)
-	          {
-	          EOF = true;
-	          }
-
-	        } // while
-
-	      in.close ();
-	      } // try
-
-	      catch (Exception e)
-	      {
-	      e.printStackTrace (System.out);
-	      }
-
+			            } // if (qualifiesForReport (tempFltRec))
+			    	}
+			   }catch(SQLException se){
+			      //Handle errors for JDBC
+			      se.printStackTrace();
+			   }
 	      //
 	      // print the report trailer
 	      //
@@ -240,9 +230,5 @@ public class CReport {
 	        AirGourmetUtilities.pressEnter ();
 	      }
 
-	    } // if (fileExists.exists ())
-
-	  } // print
-
-	
+	  }
 }
